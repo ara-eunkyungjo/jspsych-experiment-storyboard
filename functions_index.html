@@ -2,10 +2,11 @@
 <html>
 
 <head>
-    <title>Storyboard Functions </title>
+    <title>Storyboard Functions HTML </title>
     <script src="https://unpkg.com/jspsych@8.2.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey@3.0.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
 </head>
@@ -13,31 +14,14 @@
 <body></body>
 <script>
 
-    /* initialize jsPsych */
+    /* ------------------------------  INITIALIZE PARAMETERS ------------------------------ */
+
     var jsPsych = initJsPsych({
         on_finish: function () {
             jsPsych.data.displayData();
         }
     });
-
-    /* create timeline */
     var timeline = [];
-
-
-    /* define welcome message trial */
-    var welcome = {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "Welcome to the experiment. Press any key to begin."
-    };
-    timeline.push(welcome);
-
-    /* define instructions trial */
-    var instructions = {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: `<p>Press any key to begin.</p>`,
-        post_trial_gap: 2000
-    };
-    timeline.push(instructions);
 
     /* define trial stimuli array for timeline variables */
     var test_stimuli = [
@@ -45,7 +29,22 @@
         { stimulus: "img/orange.png", correct_response: 'j' }
     ];
 
-    /* define fixation and test trials */
+
+    /* ------------------------------  TRIALS ------------------------------ */
+
+    var welcome = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "Welcome to the experiment. Press any key to begin."
+    };
+    timeline.push(welcome);
+
+    var instructions = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p>Press any key to begin.</p>`,
+        post_trial_gap: 2000
+    };
+    timeline.push(instructions);
+
     var fixation = {
         type: jsPsychHtmlKeyboardResponse,
         stimulus: '<div style="font-size:60px;">+</div>',
@@ -58,7 +57,7 @@
         }
     };
 
-    var test = {
+    var image_test = {
         type: jsPsychImageKeyboardResponse,
         stimulus: jsPsych.timelineVariable('stimulus'),
         choices: ['f', 'j'],
@@ -71,16 +70,43 @@
         }
     };
 
-    /* define test procedure */
+
     var test_procedure = {
-        timeline: [fixation, test],
+        timeline: [fixation, image_test],
         timeline_variables: test_stimuli,
         repetitions: 5,
         randomize_order: true
     };
     timeline.push(test_procedure);
 
-    /* define debrief */
+
+    const survey_trial = {
+        type: jsPsychSurvey,
+        survey_json: {
+            elements:
+                [
+                    {
+                        type: 'radiogroup',
+                        title: "Which of the following do you like the most?",
+                        name: 'vegetablesLike',
+                        choices: ['Tomato', 'Cucumber', 'Eggplant', 'Corn', 'Peas', 'Broccoli']
+                    },
+                    {
+                        type: 'checkbox',
+                        title: "Which of the following do you like?",
+                        name: 'fruitLike',
+                        description: "You can select as many as you want.",
+                        choices: ['Apple', 'Banana', 'Orange', 'Grape', 'Strawberry', 'Kiwi', 'Mango'],
+                        showOtherItem: true,
+                        showSelectAllItem: true,
+                        showNoneItem: true,
+                        required: true,
+                    }
+                ]
+        }
+    };
+    timeline.push(survey_trial);
+
     var debrief_block = {
         type: jsPsychHtmlKeyboardResponse,
         stimulus: function () {
@@ -97,6 +123,15 @@
         }
     };
     timeline.push(debrief_block);
+
+
+
+
+
+    /* ------------------------------  VISUALIZE DESIGN FUNCTIONS ------------------------------ */
+
+
+
 
     /* start the experiment */
     jsPsych.run(timeline);
