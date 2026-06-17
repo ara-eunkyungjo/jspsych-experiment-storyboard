@@ -6,6 +6,7 @@
     <!-- JS Psych -->
     <!-- <script src="https://unpkg.com/jspsych@8.2.3"></script> -->
     <script src="helpers/jspsych.js"></script>
+    <script src="helpers/storyboard-diagram.js"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
 
     <!-- JS Psych Plugins -->
@@ -39,12 +40,14 @@
     /* ------------------------------  TRIALS ------------------------------ */
 
     var welcome = {
+        name: 'welcome',
         type: jsPsychHtmlKeyboardResponse,
         stimulus: "Welcome to the experiment. Press any key to begin."
     };
     timeline.push(welcome);
 
     var instructions = {
+        name: 'instructions',
         type: jsPsychHtmlKeyboardResponse,
         stimulus: `<p>Press any key to begin.</p>`,
         post_trial_gap: 2000
@@ -52,6 +55,7 @@
     timeline.push(instructions);
 
     var fixation = {
+        name: 'fixation',
         type: jsPsychHtmlKeyboardResponse,
         stimulus: '<div style="font-size:60px;">+</div>',
         choices: "NO_KEYS",
@@ -64,6 +68,7 @@
     };
 
     var image_test = {
+        name: 'image_test',
         type: jsPsychImageKeyboardResponse,
         stimulus: jsPsych.timelineVariable('stimulus'),
         choices: ['f', 'j'],
@@ -78,6 +83,7 @@
 
     /* define test procedure */
     var test_procedure = {
+        name: 'test_procedure',
         timeline: [fixation, image_test],
         timeline_variables: test_stimuli,
         repetitions: 1,
@@ -87,6 +93,7 @@
     timeline.push(test_procedure);
 
     const survey_trial = {
+        name: 'survey_trial',
         type: jsPsychSurvey,
         survey_json: {
             elements:
@@ -114,6 +121,7 @@
     timeline.push(survey_trial);
 
     var debrief_block = {
+        name: 'debrief_block',
         type: jsPsychHtmlKeyboardResponse,
         stimulus: function () {
 
@@ -135,16 +143,13 @@
 
 
     /* ------------------------------  VISUALIZE DESIGN FUNCTIONS ------------------------------ */
+    console.log('timeline (top level only):\n', timeline);       
+    console.log('trialNames (nested O, looped x, conditional x):\n', getTrialNames(timeline));  
 
+    openTopLevelDiagram(timeline);
+    downloadTopLevelDiagram(timeline, 'storyboard.html');
 
-
-
-    const trialNames = getTrialNames(timeline);
-    console.log('trialNames: ', trialNames);
-    
     /* start the experiment */
     jsPsych.run(timeline);
-
 </script>
-
 </html>
