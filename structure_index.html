@@ -90,9 +90,7 @@
     var test_procedure = {
         name: 'test_procedure',
         timeline: [fixation, image_test],
-        timeline_variables: test_stimuli,
-        repetitions: 1,
-        randomize_order: true
+        timeline_variables: test_stimuli
     };
 
     const survey_trial = {
@@ -156,6 +154,7 @@
     }
     
     const loop_node = {
+        name: 'loop_node',
         timeline: [loop_trial],
         loop_function: function(data){
             if(jsPsych.pluginAPI.compareKeys(data.values()[0].response, 'r')){
@@ -164,6 +163,23 @@
                 return false;
             }
         }
+    }
+
+
+    /* Repetitions Path */
+    const repetitions_total = 3;
+
+    const repetitions_trial = {
+        name: 'repetitions_trial',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: 'This trial will be repeated twice.',
+        post_trial_gap: 100
+    }
+    
+    const repetitions_node = {
+        name: 'repetitions_node',
+        timeline: [repetitions_trial],
+        repetitions: 2
     }
 
 
@@ -205,9 +221,10 @@
         conditional_function: function () {
             return didConsent();
         },
-        timeline: [instructions, test_procedure, loop_node, survey_trial, debrief_block]
+        timeline: [instructions, test_procedure, loop_node, repetitions_node, survey_trial, debrief_block]
     };
     timeline.push(consent_path);
+
 
     var decline_path = {
         name: 'decline_path',
