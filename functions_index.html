@@ -3,12 +3,16 @@
 
 <head>
     <title>Storyboard Functions HTML </title>
+    <!-- JS Psych -->
     <script src="https://unpkg.com/jspsych@8.2.3"></script>
+    <script src="helpers/jspsych.js"></script>
+    <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+
+    <!-- JS Psych Plugins -->
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey@3.0.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
-    <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
     <!-- Survey plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/@jspsych/plugin-survey@4.0.0/css/survey.min.css">
 
@@ -18,7 +22,6 @@
 <script>
 
     /* ------------------------------  INITIALIZE PARAMETERS ------------------------------ */
-
     var jsPsych = initJsPsych({
         on_finish: function () {
             jsPsych.data.displayData();
