@@ -6,6 +6,10 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@2.1.0"></script>
+    <script src="jspsych/plugin-instructions.js"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-audio-slider-response@2.1.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@2.1.0"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
   </head>
   <body></body>
@@ -100,14 +104,14 @@
 
 
 var stroop_variables = [
-    { colour: "blue", text: "blue", condition: "congruent" },
-    { colour: "red", text: "red", condition: "congruent" },
-    { colour: "yellow", text: "yellow", condition: "congruent" },
-    { colour: "green", text: "green", condition: "congruent" },
-    { colour: "blue", text: "yellow", condition: "incongruent" },
-    { colour: "red", text: "green", condition: "incongruent" },
-    { colour: "yellow", text: "blue", condition: "incongruent" },
-    { colour: "green", text: "red", condition: "incongruent" }
+    { color: "blue", text: "blue", condition: "congruent" },
+    { color: "red", text: "red", condition: "congruent" },
+    { color: "yellow", text: "yellow", condition: "congruent" },
+    { color: "green", text: "green", condition: "congruent" },
+    { color: "blue", text: "yellow", condition: "incongruent" },
+    { color: "red", text: "green", condition: "incongruent" },
+    { color: "yellow", text: "blue", condition: "incongruent" },
+    { color: "green", text: "red", condition: "incongruent" }
 ];
 
 // these are in HTML, so <br> means "line break"
