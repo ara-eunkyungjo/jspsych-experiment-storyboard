@@ -101,7 +101,9 @@ function timelineToMermaid(timeline, options = {}) {
   const lines = [`flowchart ${direction}`];
   const getId = createMermaidIdFactory();
   const definedNodes = new Set();
+  const loopCheckIds = new Set();
   let forkCounter = 0;
+  let loopCounter = 0;
 
   function push(line) {
     lines.push(line);
@@ -125,6 +127,13 @@ function timelineToMermaid(timeline, options = {}) {
     }
   }
 
+  function connectExits(fromExits, toId, indent = '') {
+    fromExits.forEach((fromId) => {
+      const label = loopCheckIds.has(fromId) ? 'continue' : null;
+      link(fromId, toId, label, indent);
+    });
+  }
+
   function processNodes(nodes, indent = '') {
     let exits = [];
     let firstId = null;
@@ -140,7 +149,7 @@ function timelineToMermaid(timeline, options = {}) {
 
         const forkId = `fork_${forkCounter++}`;
         push(`${indent}${forkId}{{"conditional"}}`);
-        exits.forEach((fromId) => link(fromId, forkId, null, indent));
+        connectExits(exits, forkId, indent);
 
         const branchExits = [];
         branchNodes.forEach((branch, branchIndex) => {
@@ -168,22 +177,42 @@ function timelineToMermaid(timeline, options = {}) {
       const info = getTimelineBlockInfo(node);
 
       if (node.timeline) {
-        const subgraphId = getId(node);
-        push(`${indent}subgraph ${subgraphId}["${formatMermaidNodeLabel(node)}"]`);
-        push(`${indent}  direction ${direction}`);
+        if (info.hasLoop) {
+          const inner = processNodes(node.timeline, indent);
+          if (inner.firstId) {
+            connectExits(exits, inner.firstId, indent);
 
-        const inner = processNodes(node.timeline, `${indent}  `);
-        push(`${indent}end`);
+            const loopCheckId = `loop_check_${loopCounter++}`;
+            push(`${indent}${loopCheckId}{"repeat?"}`);
+            push(`${indent}style ${loopCheckId} fill:#e8f5e9,stroke:#388e3c,color:#1b5e20`);
+            loopCheckIds.add(loopCheckId);
 
-        if (inner.firstId) {
-          exits.forEach((fromId) => link(fromId, inner.firstId, null, indent));
-          exits = inner.exits.length ? inner.exits : [inner.firstId];
-          if (!firstId) firstId = inner.firstId;
+            (inner.exits.length ? inner.exits : [inner.firstId]).forEach((fromId) => {
+              link(fromId, loopCheckId, null, indent);
+            });
+            link(loopCheckId, inner.firstId, 'repeat', indent);
+
+            exits = [loopCheckId];
+            if (!firstId) firstId = inner.firstId;
+          }
+        } else {
+          const subgraphId = getId(node);
+          push(`${indent}subgraph ${subgraphId}["${formatMermaidNodeLabel(node)}"]`);
+          push(`${indent}  direction ${direction}`);
+
+          const inner = processNodes(node.timeline, `${indent}  `);
+          push(`${indent}end`);
+
+          if (inner.firstId) {
+            connectExits(exits, inner.firstId, indent);
+            exits = inner.exits.length ? inner.exits : [inner.firstId];
+            if (!firstId) firstId = inner.firstId;
+          }
         }
       } else {
         const id = defineNode(node, indent);
         if (exits.length) {
-          exits.forEach((fromId) => link(fromId, id, null, indent));
+          connectExits(exits, id, indent);
         }
         if (!firstId) firstId = id;
         exits = [id];

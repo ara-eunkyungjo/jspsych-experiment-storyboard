@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Storyboard Functions HTML </title>
+    <!-- JS Psych -->
+    <!-- <script src="https://unpkg.com/jspsych@8.2.3"></script> -->
+    <script src="helpers/jspsych.js"></script>
+    <script src="helpers/storyboard-diagram.js"></script>
+    <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+    
+
+    <!-- JS Psych Plugins -->
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey@3.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
+    <!-- Survey plugin CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@jspsych/plugin-survey@4.0.0/css/survey.min.css">
+
+</head>
+
+<body></body>
+<script>
+
+    /* ------------------------------  INITIALIZE PARAMETERS ------------------------------ */
+    var jsPsych = initJsPsych({
+        on_finish: function () {
+            jsPsych.data.displayData();
+        }
+    });
+    var timeline = [];
+
+    /* define trial stimuli array for timeline variables */
+    var test_stimuli = [
+        { stimulus: "img/blue.png", correct_response: 'f' },
+        { stimulus: "img/orange.png", correct_response: 'j' }
+    ];
+
+
+    /* ------------------------------  TRIALS ------------------------------ */
+
+    var welcome = {
+        name: 'welcome',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "Welcome to the experiment. Press any key to begin."
+    };
+    
+
+
+    var instructions = {
+        name: 'instructions',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p>Press any key to begin.</p>`,
+        post_trial_gap: 2000
+    };
+
+    var fixation = {
+        name: 'fixation',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<div style="font-size:60px;">+</div>',
+        choices: "NO_KEYS",
+        trial_duration: function () {
+            return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
+        },
+        data: {
+            task: 'fixation'
+        },
+        on_finish: function(data) {
+            console.log(data)
+        }
+    };
+
+    var image_test = {
+        name: 'image_test',
+        type: jsPsychImageKeyboardResponse,
+        stimulus: jsPsych.timelineVariable('stimulus'),
+        choices: ['f', 'j'],
+        data: {
+            task: 'response',
+            correct_response: jsPsych.timelineVariable('correct_response')
+        },
+        on_finish: function (data) {
+            data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+        }
+    };
+
+    /* define test procedure */
+    var test_procedure = {
+        name: 'test_procedure',
+        timeline: [fixation, image_test],
+        timeline_variables: test_stimuli,
+        repetitions: 1,
+        randomize_order: true
+    };
+
+    const survey_trial = {
+        name: 'survey_trial',
+        type: jsPsychSurvey,
+        survey_json: {
+            elements:
+                [
+                    {
+                        type: 'radiogroup',
+                        title: "Which of the following do you like the most?",
+                        name: 'vegetablesLike',
+                        choices: ['Tomato', 'Cucumber', 'Eggplant', 'Corn', 'Peas', 'Broccoli']
+                    },
+                    {
+                        type: 'checkbox',
+                        title: "Which of the following do you like?",
+                        name: 'fruitLike',
+                        description: "You can select as many as you want.",
+                        choices: ['Apple', 'Banana', 'Orange', 'Grape', 'Strawberry', 'Kiwi', 'Mango'],
+                        showOtherItem: true,
+                        showSelectAllItem: true,
+                        showNoneItem: true,
+                        required: true,
+                    }
+                ]
+        }
+    };
+
+    var debrief_block = {
+        name: 'debrief_block',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: function () {
+
+            var trials = jsPsych.data.get().filter({ task: 'response' });
+            var correct_trials = trials.filter({ correct: true });
+            var accuracy = Math.round(correct_trials.count() / trials.count() * 100);
+            var rt = Math.round(correct_trials.select('rt').mean());
+
+            return `<p>You responded correctly on ${accuracy}% of the trials.</p>
+          <p>Your average response time was ${rt}ms.</p>
+          <p>Press any key to complete the experiment. Thank you!</p>`;
+
+        }
+    };
+
+    var end_of_experiment = {
+        name: 'end_of_experiment',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p>You chose not to participate. You may close this window now.</p>`,
+        choices: "NO_KEYS",
+        trial_duration: null
+    };
+
+
+    /* Loop Path */
+    const loop_trial = {
+        name: 'loop_trial',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: 'This trial is in a loop. Press R to repeat this trial, or C to continue.'
+    }
+    
+    const loop_node = {
+        timeline: [loop_trial],
+        loop_function: function(data){
+            if(jsPsych.pluginAPI.compareKeys(data.values()[0].response, 'r')){
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+
+
+
+    
+
+    var consent = {
+        name: 'consent',
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <p>Please read the consent form below and choose whether to participate.</p>
+            <p><em>[Consent form text would go here.]</em></p>
+        `,
+        choices: ['Consent', 'I do not consent'],
+        data: {
+            trial_name: 'consent'
+        },
+        on_finish: function (data) {
+            data.consent_given = data.response === 0; // 0: Consent, 1: I do not consent
+        }
+    };
+
+
+    /* Add to timeline */
+    timeline.push(welcome);
+    timeline.push(consent);
+
+    
+    /* Conditional Path */
+    function didConsent() {
+        var consentData = jsPsych.data.get().filter({ trial_name: 'consent' }).values()[0];
+        return consentData && consentData.consent_given === true;
+    }
+
+    
+    var consent_path = {
+        name: 'consent_path',
+        conditional_function: function () {
+            return didConsent();
+        },
+        timeline: [instructions, test_procedure, loop_node, survey_trial, debrief_block]
+    };
+    timeline.push(consent_path);
+
+    var decline_path = {
+        name: 'decline_path',
+        conditional_function: function () {
+            return !didConsent();
+        },
+        timeline: [end_of_experiment]
+    };
+    timeline.push(decline_path);
+
+
+    /* ------------------------------  VISUALIZE DESIGN FUNCTIONS ------------------------------ */
+    console.log('timeline (top level only):\n', timeline);       
+    console.log('trialNames (nested O, looped x, conditional x):\n', getTrialNames(timeline));  
+
+    timeline.forEach(function (node) {
+        console.log('timeline block info:\n', getTimelineBlockInfo(node));
+    });
+
+    function getAllTimelineBlockInfo(nodes) {
+        const info = [];
+        function traverse(node) {
+          info.push(getTimelineBlockInfo(node));
+          if (node.timeline) {
+            node.timeline.forEach(traverse);
+          }
+        }
+        nodes.forEach(traverse);
+        return info;
+      }
+      
+      console.log('all timeline block info:\n', getAllTimelineBlockInfo(timeline));
+
+    console.log('mermaid code:\n', timelineToMermaid(timeline));
+    openMermaidDiagram(timeline);
+
+    /* start the experiment */
+    jsPsych.run(timeline);
+</script>
+</html>
