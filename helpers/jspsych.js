@@ -2022,7 +2022,6 @@ var jsPsychModule = (function (exports) {
 
 		//
 		// ARC4
-		//
 		// An ARC4 implementation.  The constructor takes a key in the form of
 		// an array of at most (width) integers that should be 0 <= x < (width).
 		//
@@ -2062,6 +2061,7 @@ var jsPsychModule = (function (exports) {
 		    // See http://google.com/search?q=rsa+fluhrer+response&btnI
 		  })(width);
 		}
+				nodecrypto;         // node.js crypto module, initialized at the bottom.
 
 		//
 		// copy()
@@ -2084,7 +2084,6 @@ var jsPsychModule = (function (exports) {
 		      try { result.push(flatten(obj[prop], depth - 1)); } catch (e) {}
 		    }
 		  }
-		  return (result.length ? result : typ == 'string' ? obj : obj + '\0');
 		}
 
 		//
@@ -2098,7 +2097,6 @@ var jsPsychModule = (function (exports) {
 		    key[mask & j] =
 		      mask & ((smear ^= key[mask & j] * 19) + stringseed.charCodeAt(j++));
 		  }
-		  return tostring(key);
 		}
 
 		//
@@ -2121,7 +2119,6 @@ var jsPsychModule = (function (exports) {
 		    var browser = global.navigator,
 		        plugins = browser && browser.plugins;
 		    return [+new Date, global, plugins, global.screen, tostring(pool)];
-		  }
 		}
 
 		//

@@ -4,7 +4,6 @@
 <head>
     <title>Storyboard Functions HTML </title>
     <!-- JS Psych -->
-    <script src="https://unpkg.com/jspsych@8.2.3"></script>
     <script src="helpers/jspsych.js"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
 
@@ -16,9 +15,16 @@
     <!-- Survey plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/@jspsych/plugin-survey@4.0.0/css/survey.min.css">
 
+
+    <!-- Script for LaTeX -->
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+
 </head>
 
-<body></body>
+<body>
+
+</body>
 <script>
 
     /* ------------------------------  INITIALIZE PARAMETERS ------------------------------ */
@@ -42,6 +48,7 @@
         type: jsPsychHtmlKeyboardResponse,
         stimulus: "Welcome to the experiment. Press any key to begin."
     };
+
     timeline.push(welcome);
 
     var instructions = {
