@@ -66,12 +66,29 @@ function formatMermaidNodeLabel(node) {
   if (plugin) parts.push(plugin);
   if (info.hasConditional) parts.push('conditional');
   if (info.hasTimelineVariables) parts.push(`${node.timeline_variables.length} timeline vars`);
-  if (info.repetitions > 1) parts.push(`reps: ${info.repetitions}`);
   if (info.randomizeOrder) parts.push('random order');
   if (info.hasLoop) parts.push('loop');
   if (info.hasSample) parts.push('sample');
   return parts.map(escapeMermaidLabel).join('<br/>');
 }
+
+function formatMermaidSubgraphLabel(node) {
+  const info = getTimelineBlockInfo(node);
+  const parts = [node.name ?? 'none', 'node'];
+  if (info.hasTimelineVariables) {
+    parts.push(`${node.timeline_variables.length} timeline vars`);
+  }
+  if (info.randomizeOrder) parts.push('random order');
+  if (info.hasSample) parts.push('sample');
+  if (info.hasLoop) parts.push('may loop');
+  if (info.repetitions > 1) {
+    parts.push(`x${info.repetitions}`);
+  }
+  return parts.map(escapeMermaidLabel).join('<br/>');
+}
+
+const TIMELINE_NODE_SUBGRAPH_STYLE =
+  'fill:#fce4ec,stroke:#e91e63,stroke-width:2px,color:#880e4f';
 
 function createMermaidIdFactory() {
   const usedIds = new Set();
@@ -101,7 +118,6 @@ function timelineToMermaid(timeline, options = {}) {
   const lines = [`flowchart ${direction}`];
   const getId = createMermaidIdFactory();
   const definedNodes = new Set();
-  const loopCheckIds = new Set();
   let forkCounter = 0;
   let loopCounter = 0;
 
@@ -129,9 +145,35 @@ function timelineToMermaid(timeline, options = {}) {
 
   function connectExits(fromExits, toId, indent = '') {
     fromExits.forEach((fromId) => {
-      const label = loopCheckIds.has(fromId) ? 'continue' : null;
-      link(fromId, toId, label, indent);
+      link(fromId, toId, null, indent);
     });
+  }
+
+  function processTimelineNode(node, indent = '') {
+    const info = getTimelineBlockInfo(node);
+    const subgraphId = getId(node);
+    push(`${indent}subgraph ${subgraphId}["${formatMermaidSubgraphLabel(node)}"]`);
+    push(`${indent}  direction ${direction}`);
+
+    const inner = processNodes(node.timeline, `${indent}  `);
+    let blockExits = inner.exits.length ? inner.exits : (inner.firstId ? [inner.firstId] : []);
+
+    if (info.hasLoop && inner.firstId) {
+      const loopCheckId = `loop_check_${loopCounter++}`;
+      push(`${indent}  ${loopCheckId}{"repeat?"}`);
+      push(`${indent}  style ${loopCheckId} fill:#c8e6c9,stroke:#388e3c,color:#1b5e20`);
+
+      blockExits.forEach((fromId) => {
+        link(fromId, loopCheckId, null, `${indent}  `);
+      });
+      link(loopCheckId, inner.firstId, 'repeat', `${indent}  `);
+      blockExits = [loopCheckId];
+    }
+
+    push(`${indent}end`);
+    push(`${indent}style ${subgraphId} ${TIMELINE_NODE_SUBGRAPH_STYLE}`);
+
+    return { firstId: inner.firstId, exits: blockExits };
   }
 
   function processNodes(nodes, indent = '') {
@@ -156,10 +198,10 @@ function timelineToMermaid(timeline, options = {}) {
           const branchLabel = branch.name ?? `path ${branchIndex + 1}`;
 
           if (branch.timeline?.length) {
-            const inner = processNodes(branch.timeline, indent);
-            if (inner.firstId) {
-              link(forkId, inner.firstId, branchLabel, indent);
-              branchExits.push(...(inner.exits.length ? inner.exits : [inner.firstId]));
+            const wrapped = processTimelineNode(branch, indent);
+            if (wrapped.firstId) {
+              link(forkId, wrapped.firstId, branchLabel, indent);
+              branchExits.push(...wrapped.exits);
             }
           } else {
             const id = defineNode(branch, indent);
@@ -174,40 +216,13 @@ function timelineToMermaid(timeline, options = {}) {
       }
 
       const node = nodes[i++];
-      const info = getTimelineBlockInfo(node);
 
       if (node.timeline) {
-        if (info.hasLoop) {
-          const inner = processNodes(node.timeline, indent);
-          if (inner.firstId) {
-            connectExits(exits, inner.firstId, indent);
-
-            const loopCheckId = `loop_check_${loopCounter++}`;
-            push(`${indent}${loopCheckId}{"repeat?"}`);
-            push(`${indent}style ${loopCheckId} fill:#e8f5e9,stroke:#388e3c,color:#1b5e20`);
-            loopCheckIds.add(loopCheckId);
-
-            (inner.exits.length ? inner.exits : [inner.firstId]).forEach((fromId) => {
-              link(fromId, loopCheckId, null, indent);
-            });
-            link(loopCheckId, inner.firstId, 'repeat', indent);
-
-            exits = [loopCheckId];
-            if (!firstId) firstId = inner.firstId;
-          }
-        } else {
-          const subgraphId = getId(node);
-          push(`${indent}subgraph ${subgraphId}["${formatMermaidNodeLabel(node)}"]`);
-          push(`${indent}  direction ${direction}`);
-
-          const inner = processNodes(node.timeline, `${indent}  `);
-          push(`${indent}end`);
-
-          if (inner.firstId) {
-            connectExits(exits, inner.firstId, indent);
-            exits = inner.exits.length ? inner.exits : [inner.firstId];
-            if (!firstId) firstId = inner.firstId;
-          }
+        const wrapped = processTimelineNode(node, indent);
+        if (wrapped.firstId) {
+          connectExits(exits, wrapped.firstId, indent);
+          exits = wrapped.exits;
+          if (!firstId) firstId = wrapped.firstId;
         }
       } else {
         const id = defineNode(node, indent);

@@ -87,8 +87,8 @@
     };
 
     /* define test procedure */
-    var test_procedure = {
-        name: 'test_procedure',
+    var nested_trial = {
+        name: 'nested_trial',
         timeline: [fixation, image_test],
         timeline_variables: test_stimuli
     };
@@ -221,7 +221,7 @@
         conditional_function: function () {
             return didConsent();
         },
-        timeline: [instructions, test_procedure, loop_node, repetitions_node, survey_trial, debrief_block]
+        timeline: [instructions, nested_trial, loop_node, repetitions_node, survey_trial, debrief_block]
     };
     timeline.push(consent_path);
 
