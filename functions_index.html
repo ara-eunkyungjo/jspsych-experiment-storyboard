@@ -11,6 +11,7 @@
 
     <!-- JS Psych Plugins -->
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey@3.0.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
@@ -46,13 +47,29 @@
     };
     timeline.push(welcome);
 
+    var consent = {
+        name: 'consent',
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <p>Please read the consent form below and choose whether to participate.</p>
+            <p><em>[Consent form text would go here.]</em></p>
+        `,
+        choices: ['Consent', 'I do not consent'],
+        data: {
+            trial_name: 'consent'
+        },
+        on_finish: function (data) {
+            data.consent_given = data.response === 'Consent';
+        }
+    };
+    timeline.push(consent);
+
     var instructions = {
         name: 'instructions',
         type: jsPsychHtmlKeyboardResponse,
         stimulus: `<p>Press any key to begin.</p>`,
         post_trial_gap: 2000
     };
-    timeline.push(instructions);
 
     var fixation = {
         name: 'fixation',
@@ -64,6 +81,9 @@
         },
         data: {
             task: 'fixation'
+        },
+        on_finish: function(data) {
+            console.log(data)
         }
     };
 
@@ -89,8 +109,6 @@
         repetitions: 1,
         randomize_order: true
     };
-
-    timeline.push(test_procedure);
 
     const survey_trial = {
         name: 'survey_trial',
@@ -118,7 +136,6 @@
                 ]
         }
     };
-    timeline.push(survey_trial);
 
     var debrief_block = {
         name: 'debrief_block',
@@ -136,18 +153,64 @@
 
         }
     };
-    timeline.push(debrief_block);
 
+    var end_of_experiment = {
+        name: 'end_of_experiment',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<p>You chose not to participate. You may close this window now.</p>`,
+        choices: "NO_KEYS",
+        trial_duration: null
+    };
 
+    function didConsent() {
+        var consentData = jsPsych.data.get().filter({ trial_name: 'consent' }).values()[0];
+        return consentData && consentData.consent_given === true;
+    }
 
+    var consent_path = {
+        name: 'consent_path',
+        conditional_function: function () {
+            return didConsent();
+        },
+        timeline: [instructions, test_procedure, survey_trial, debrief_block]
+    };
+    timeline.push(consent_path);
+
+    var decline_path = {
+        name: 'decline_path',
+        conditional_function: function () {
+            return !didConsent();
+        },
+        timeline: [end_of_experiment]
+    };
+    timeline.push(decline_path);
 
 
     /* ------------------------------  VISUALIZE DESIGN FUNCTIONS ------------------------------ */
     console.log('timeline (top level only):\n', timeline);       
     console.log('trialNames (nested O, looped x, conditional x):\n', getTrialNames(timeline));  
 
+    timeline.forEach(function (node) {
+        console.log('timeline block info:\n', getTimelineBlockInfo(node));
+    });
+
+    function getAllTimelineBlockInfo(nodes) {
+        const info = [];
+        function traverse(node) {
+          info.push(getTimelineBlockInfo(node));
+          if (node.timeline) {
+            node.timeline.forEach(traverse);
+          }
+        }
+        nodes.forEach(traverse);
+        return info;
+      }
+      
+      console.log('all timeline block info:\n', getAllTimelineBlockInfo(timeline));
+      
+      
     openTopLevelDiagram(timeline);
-    downloadTopLevelDiagram(timeline, 'storyboard.html');
+    // downloadTopLevelDiagram(timeline, 'storyboard.html');
 
     /* start the experiment */
     jsPsych.run(timeline);
