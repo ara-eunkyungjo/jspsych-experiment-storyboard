@@ -4,7 +4,7 @@
 <head>
     <title>Storyboard Functions HTML </title>
     <!-- JS Psych -->
-    <script src="https://unpkg.com/jspsych@8.2.3"></script>
+    <!-- <script src="https://unpkg.com/jspsych@8.2.3"></script> -->
     <script src="helpers/jspsych.js"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
 
@@ -139,6 +139,9 @@
 
 
 
+    const trialNames = getTrialNames(timeline);
+    console.log('trialNames: ', trialNames);
+    
     /* start the experiment */
     jsPsych.run(timeline);
 

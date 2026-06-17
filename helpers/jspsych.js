@@ -4143,3 +4143,23 @@ var jsPsychModule = (function (exports) {
 
 })({});
 var initJsPsych = jsPsychModule.initJsPsych;
+
+
+/////////////////////////////////////////////////////////////
+// getTrialNames function
+/////////////////////////////////////////////////////////////
+function getTrialNames(timeline) {
+  const names = [];
+  function traverse(node) {
+    if (Array.isArray(node)) {
+      node.forEach(traverse);
+      return;
+    }
+    names.push(node.name ?? 'none');
+    if (node.timeline) {
+      node.timeline.forEach(traverse);
+    }
+  }
+  traverse(timeline);
+  return names;
+}
