@@ -8,6 +8,7 @@
     <script src="helpers/jspsych.js"></script>
     <script src="helpers/storyboard-diagram.js"></script>
     <link href="https://unpkg.com/jspsych@8.2.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+    
 
     <!-- JS Psych Plugins -->
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
@@ -207,10 +208,10 @@
       }
       
       console.log('all timeline block info:\n', getAllTimelineBlockInfo(timeline));
-      
-      
+
+    console.log('mermaid code:\n', timelineToMermaid(timeline));
+    openMermaidDiagram(timeline);
     openTopLevelDiagram(timeline);
-    // downloadTopLevelDiagram(timeline, 'storyboard.html');
 
     /* start the experiment */
     jsPsych.run(timeline);
