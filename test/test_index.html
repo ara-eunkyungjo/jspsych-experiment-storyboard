@@ -2,7 +2,9 @@
 <html>
   <head>
     <title>My experiment</title>
+    <script src="jatos.js"></script>
     <script src="https://unpkg.com/jspsych@8.2.3"></script>
+    <script src="/study_assets/8e73afc7-67f0-4ad3-b96a-ff06cfdfc2e0/test_index"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
     <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
@@ -139,6 +141,7 @@ var fixation = {
 var interval = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: '',
+
   trial_duration: 250,
   response_ends_trial: false
 }
@@ -208,5 +211,8 @@ var exp3_procedure = {
 timeline.push(exp3_procedure);
 
     /* start the experiment */
+ jatos.onLoad(() => {
     jsPsych.run(timeline);
+  });
+
   </script>
