@@ -44,7 +44,7 @@
     var welcome = {
         name: 'welcome',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "Welcome to the experiment. Press any key to begin."
+        stimulus: "(welcome)Welcome to the experiment. Press any key to begin."
     };
     
 
@@ -52,14 +52,30 @@
     var instructions = {
         name: 'instructions',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: `<p>Press any key to begin.</p>`,
+        stimulus: `<p>(instructions) Press any key to begin.</p>`,
         post_trial_gap: 2000
     };
+    
+    
+    
+    /* nested timeline */
+    const judgment_trials = {
+        name: 'nested timeline',
+        type: jsPsychImageKeyboardResponse,
+        prompt: '<p>(nested timeline)Press a number 1-7 to indicate how unusual the image is.</p>',
+        choices: ['1','2','3','4','5','6','7'],
+        timeline: [
+            {prompt: `(nested timeline) stim1`},
+            {prompt: `(nested timeline) stim2`},
+            {prompt: `(nested timeline) stim3`}
+        ]
+    }
+
 
     var fixation = {
         name: 'fixation',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: '<div style="font-size:60px;">+</div>',
+        stimulus: '<div style="font-size:60px;">(fixation)\n+</div>',
         choices: "NO_KEYS",
         trial_duration: function () {
             return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
@@ -75,7 +91,7 @@
     var image_test = {
         name: 'image_test',
         type: jsPsychImageKeyboardResponse,
-        stimulus: jsPsych.timelineVariable('stimulus'),
+        stimulus: '<div style="font-size:60px;">(image_test)\n' + jsPsych.timelineVariable('stimulus') + '</div>',
         choices: ['f', 'j'],
         data: {
             task: 'response',
@@ -87,12 +103,59 @@
     };
 
     /* define test procedure */
-    var nested_trial = {
-        name: 'nested_trial',
+    var timeline_array = {
+        name: 'timeline_array',
         timeline: [fixation, image_test],
         timeline_variables: test_stimuli
     };
 
+
+    
+    
+    const pre_if_trial = {
+        name: 'pre_if_trial',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '(pre_if_trial) The next trial is in a conditional statement. Press S to skip it, or V to view it.'
+    }
+    
+    const if_trial = {
+        name: 'if_trial',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '(if_trial) You chose to view the trial. Press any key to continue.'
+    }
+    
+    const if_node = {
+        name: 'if_node',
+        timeline: [if_trial],
+        conditional_function: function(){
+            // get the data from the previous trial,
+            // and check which key was pressed
+            const data = jsPsych.data.get().last(1).values()[0];
+            if(jsPsych.pluginAPI.compareKeys(data.response, 's')){
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+    
+    const after_if_trial = {
+        name: 'after_if_trial',
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '(after_if_trial) This is the trial after the conditional.'
+    }
+    
+    
+    var conditional_path = {
+        name: 'conditional_path',
+        timeline: [pre_if_trial, if_node, after_if_trial]
+    }
+
+
+
+
+
+   
     const survey_trial = {
         name: 'survey_trial',
         type: jsPsychSurvey,
@@ -101,13 +164,13 @@
                 [
                     {
                         type: 'radiogroup',
-                        title: "Which of the following do you like the most?",
+                        title: "(survey_trial) Which of the following do you like the most?",
                         name: 'vegetablesLike',
                         choices: ['Tomato', 'Cucumber', 'Eggplant', 'Corn', 'Peas', 'Broccoli']
                     },
                     {
                         type: 'checkbox',
-                        title: "Which of the following do you like?",
+                        title: "(survey_trial) Which of the following do you like?",
                         name: 'fruitLike',
                         description: "You can select as many as you want.",
                         choices: ['Apple', 'Banana', 'Orange', 'Grape', 'Strawberry', 'Kiwi', 'Mango'],
@@ -130,7 +193,7 @@
             var accuracy = Math.round(correct_trials.count() / trials.count() * 100);
             var rt = Math.round(correct_trials.select('rt').mean());
 
-            return `<p>You responded correctly on ${accuracy}% of the trials.</p>
+            return `<p>(debrief_block) You responded correctly on ${accuracy}% of the trials.</p>
           <p>Your average response time was ${rt}ms.</p>
           <p>Press any key to complete the experiment. Thank you!</p>`;
 
@@ -140,7 +203,7 @@
     var end_of_experiment = {
         name: 'end_of_experiment',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: `<p>You chose not to participate. You may close this window now.</p>`,
+        stimulus: `<p>(end_of_experiment) You chose not to participate. You may close this window now.</p>`,
         choices: "NO_KEYS",
         trial_duration: null
     };
@@ -150,7 +213,7 @@
     const loop_trial = {
         name: 'loop_trial',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: 'This trial is in a loop. Press R to repeat this trial, or C to continue.'
+        stimulus: '(loop_trial) This trial is in a loop. Press R to repeat this trial, or C to continue.'
     }
     
     const loop_node = {
@@ -172,14 +235,14 @@
     const repetitions_trial = {
         name: 'repetitions_trial',
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: 'This trial will be repeated twice.',
+        stimulus: '(repetitions_trial) This trial will be repeated twice.',
         post_trial_gap: 100
     }
     
     const repetitions_node = {
         name: 'repetitions_node',
         timeline: [repetitions_trial],
-        repetitions: 2
+        repetitions: repetitions_total
     }
 
 
@@ -191,7 +254,7 @@
         name: 'consent',
         type: jsPsychHtmlButtonResponse,
         stimulus: `
-            <p>Please read the consent form below and choose whether to participate.</p>
+            <p>(consent) Please read the consent form below and choose whether to participate.</p>
             <p><em>[Consent form text would go here.]</em></p>
         `,
         choices: ['Consent', 'I do not consent'],
@@ -221,7 +284,7 @@
         conditional_function: function () {
             return didConsent();
         },
-        timeline: [instructions, nested_trial, loop_node, repetitions_node, survey_trial, debrief_block]
+        timeline: [instructions, judgment_trials, conditional_path, timeline_array, loop_node, repetitions_node, survey_trial, debrief_block]
     };
     timeline.push(consent_path);
 

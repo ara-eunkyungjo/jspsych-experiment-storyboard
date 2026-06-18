@@ -2,10 +2,37 @@
 // Get trial information
 /////////////////////////////////////////////////////////////
 
+function isTimelineNode(node) {
+  return Boolean(node.timeline) && !node.type;
+}
+
+function isTrialWithEmbeddedTimeline(node) {
+  return Boolean(node.type) && Array.isArray(node.timeline) && node.timeline.length > 0;
+}
+
+function expandEmbeddedTimelineTrials(trial) {
+  const { timeline, ...sharedProps } = trial;
+  const baseName = trial.name ?? 'trial';
+
+  return timeline.map((entry, index) => ({
+    ...sharedProps,
+    ...entry,
+    name: entry.name ?? `${baseName}_${index + 1}`,
+  }));
+}
+
+function formatMermaidEmbeddedTimelineSubgraphLabel(node) {
+  const parts = [node.name ?? 'none', 'node'];
+  const plugin = node.type?.info?.name;
+  if (plugin) parts.push(plugin);
+  return parts.map(escapeMermaidLabel).join('<br/>');
+}
+
 function getTimelineBlockInfo(node) {
   return {
     name: node.name ?? 'none',
-    isTimeline: Boolean(node.timeline),
+    isTimeline: isTimelineNode(node),
+    hasEmbeddedTimeline: isTrialWithEmbeddedTimeline(node),
     hasConditional: typeof node.conditional_function === 'function',
     hasLoop: typeof node.loop_function === 'function',
     repetitions: node.repetitions ?? 1,
@@ -38,6 +65,13 @@ function getTrialNames(timeline) {
       node.forEach(traverse);
       return;
     }
+    if (isTrialWithEmbeddedTimeline(node)) {
+      names.push(node.name ?? 'none');
+      expandEmbeddedTimelineTrials(node).forEach((trial) => {
+        names.push(trial.name);
+      });
+      return;
+    }
     names.push(node.name ?? 'none');
     if (node.timeline) {
       node.timeline.forEach(traverse);
@@ -64,6 +98,7 @@ function formatMermaidNodeLabel(node) {
   const parts = [node.name ?? 'none'];
   const plugin = node.type?.info?.name;
   if (plugin) parts.push(plugin);
+
   if (info.hasConditional) parts.push('conditional');
   if (info.hasTimelineVariables) parts.push(`${node.timeline_variables.length} timeline vars`);
   if (info.randomizeOrder) parts.push('random order');
@@ -74,21 +109,21 @@ function formatMermaidNodeLabel(node) {
 
 function formatMermaidSubgraphLabel(node) {
   const info = getTimelineBlockInfo(node);
-  const parts = [node.name ?? 'none', 'node'];
+  const displayName = info.repetitions > 1
+    ? `${node.name ?? 'none'} ( X ${info.repetitions})`
+    : (node.name ?? 'none');
+  const parts = [displayName, 'node'];
   if (info.hasTimelineVariables) {
     parts.push(`${node.timeline_variables.length} timeline vars`);
   }
   if (info.randomizeOrder) parts.push('random order');
   if (info.hasSample) parts.push('sample');
   if (info.hasLoop) parts.push('may loop');
-  if (info.repetitions > 1) {
-    parts.push(`x${info.repetitions}`);
-  }
   return parts.map(escapeMermaidLabel).join('<br/>');
 }
 
 const TIMELINE_NODE_SUBGRAPH_STYLE =
-  'fill:#fce4ec,stroke:#e91e63,stroke-width:2px,color:#880e4f';
+  'fill:#fffde7,stroke:#fbc02d,stroke-width:2px,color:#7f6000';
 
 function createMermaidIdFactory() {
   const usedIds = new Set();
@@ -147,6 +182,30 @@ function timelineToMermaid(timeline, options = {}) {
     fromExits.forEach((fromId) => {
       link(fromId, toId, null, indent);
     });
+  }
+
+  function processEmbeddedTimelineTrial(node, indent = '') {
+    const subgraphId = getId(node);
+    push(`${indent}subgraph ${subgraphId}["${formatMermaidEmbeddedTimelineSubgraphLabel(node)}"]`);
+    push(`${indent}  direction ${direction}`);
+
+    const expanded = expandEmbeddedTimelineTrials(node);
+    let blockExits = [];
+    let innerFirstId = null;
+
+    expanded.forEach((trial) => {
+      const id = defineNode(trial, `${indent}  `);
+      if (blockExits.length) {
+        connectExits(blockExits, id, `${indent}  `);
+      }
+      blockExits = [id];
+      if (!innerFirstId) innerFirstId = id;
+    });
+
+    push(`${indent}end`);
+    push(`${indent}style ${subgraphId} ${TIMELINE_NODE_SUBGRAPH_STYLE}`);
+
+    return { firstId: innerFirstId, exits: blockExits };
   }
 
   function processTimelineNode(node, indent = '') {
@@ -217,7 +276,14 @@ function timelineToMermaid(timeline, options = {}) {
 
       const node = nodes[i++];
 
-      if (node.timeline) {
+      if (isTrialWithEmbeddedTimeline(node)) {
+        const wrapped = processEmbeddedTimelineTrial(node, indent);
+        if (wrapped.firstId) {
+          connectExits(exits, wrapped.firstId, indent);
+          exits = wrapped.exits;
+          if (!firstId) firstId = wrapped.firstId;
+        }
+      } else if (isTimelineNode(node)) {
         const wrapped = processTimelineNode(node, indent);
         if (wrapped.firstId) {
           connectExits(exits, wrapped.firstId, indent);
